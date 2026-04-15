@@ -135,8 +135,9 @@ function calculate_period(optic, params=params, u=u_end; step_direction=1)
         p_min = 0.0, 
         p_max = 2.0,
         ds = 0.01 * step_direction,
-        #dsmax = 0.01, # ensures that we get lots of points for plotting
+        dsmax = 0.01, # ensures that we get lots of points for plotting
         detect_bifurcation = 2,
+        max_steps = 1800
     )
 
     # calculate hopf points
@@ -161,6 +162,7 @@ function calculate_period(optic, params=params, u=u_end; step_direction=1)
         br, 1, # Ensure '1' is the index of the hopf point
         k0_range, 
         period_prob;
+        nev=100
     )
     
     return period_branch
