@@ -106,10 +106,12 @@ savefig("figure2C.svg")
 function bifurcation_model(u, p)
     param_type = typeof(p.k0.one) ## these screw up type inference for some reason
     param_type2 = typeof(p.k0.four) ## so we promote the type
+    param_type3 = typeof(p.k0.three) 
 
     # Promote between the state 'u' and the parameter type
     T = promote_type(eltype(u), param_type)
     T = promote_type(T, param_type2)
+    T = promote_type(T, param_type3)
     
     # Create du with the promoted type
     du = similar(u, T)
@@ -124,7 +126,7 @@ u_end = fill(1.0, 9) # have to just set everything to one instead
 
 
 
-function calculate_period(optic, params=params, u=u_end)
+function calculate_period(optic, params=params, u=u_end; step_direction=1)
     # define the bifurcation based on our parameter (i.e. k01)
     prob = BK.BifurcationProblem(bifurcation_model, u, params, optic)
 
@@ -132,8 +134,8 @@ function calculate_period(optic, params=params, u=u_end)
     k0_range = BK.ContinuationPar(
         p_min = 0.0, 
         p_max = 2.0,
-        ds = 0.01,
-        dsmax = 0.01, # ensures that we get lots of points for plotting
+        ds = 0.01 * step_direction,
+        #dsmax = 0.01, # ensures that we get lots of points for plotting
         detect_bifurcation = 2,
     )
 
@@ -237,24 +239,25 @@ plot(brpo_fold, vars = (:param, :period),
 
 # wc-1 knockout
 k7_0_params = @set params.k[7] = 0.0
-k7_0_params = @set k7_0_params.k0.three = 0.0
-problem = DE.ODEProblem(model, u0, tspan, k7_0_params)
+k7_0_params = @set k7_0_params.k0.three = 0.5
+problem = DE.ODEProblem(model, u_end, tspan, k7_0_params)
 sol = DE.solve(problem)
 plot(sol.t, sol[1, :])
-period_branch = calculate_period((@optic _.k0.three), k7_0_params)
-period_branch = period_no_hopf((@optic _.k0.three), k7_0_params)
+period_branch = calculate_period((@optic _.k0.three), k7_0_params; step_direction=-1)
+#period_branch = period_no_hopf((@optic _.k0.three), k7_0_params)
 
 plot(period_branch, vars = (:param, :period),
      xlabel = L"rate of $csp-1$ overexpression $k_{04}$",
      ylabel = "period, h",
-     xlims = (0, 0.26),
+     xlims = (0, 1.1),
      ylims = (20, 26)
      )
 savefig("figure3C.svg")
 
 # need to set csp-1 expression constant k16=0
 
-k16_0_params = @set params.k[16] = 0.2
+k16_0_params = @set params.k[16] = 0.0
+
 period_branch = calculate_period((@optic _.k0.four), k16_0_params)
 
 
