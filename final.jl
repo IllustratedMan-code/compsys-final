@@ -3,6 +3,7 @@ using Plots
 using LaTeXStrings
 import BifurcationKit as BK
 import BifurcationKit: @optic
+using Accessors #for dealing with updating params tuple in a not horrible way
 
 
 # rate constants
@@ -50,7 +51,7 @@ function model(du, u, p, t)
 end
 
 
-u0 = fill(10.0, 9) # need to give the initial condition at least a 1 to occilate
+u0 = fill(1.0, 9) # need to give the initial condition at least a 1 to occilate
 tspan = (0.0, 3000)
 
 params = (k=k, K=K, k0=k0)
@@ -76,10 +77,10 @@ solution = Dict("frq mRNA" => sol[1, :],
                 "time" => sol.t .- 500
                 )
 
-# plot(solution["time"], solution["WC-1_tot"], label=L"WC-1_{tot}", xlims=(0, 48))
-# plot!(solution["time"], solution["FRQ_tot"], label=L"[FRQ_{tot}]", xlims=(0, 48))
-plot(solution["time"], solution["WC-1_tot"], label=L"WC-1_{tot}")
-plot!(solution["time"], solution["FRQ_tot"], label=L"[FRQ_{tot}]")
+plot(solution["time"], solution["WC-1_tot"], label=L"WC-1_{tot}", xlims=(0, 48))
+plot!(solution["time"], solution["FRQ_tot"], label=L"[FRQ_{tot}]", xlims=(0, 48))
+# plot(solution["time"], solution["WC-1_tot"], label=L"WC-1_{tot}")
+# plot!(solution["time"], solution["FRQ_tot"], label=L"[FRQ_{tot}]")
 xlabel!("Time (h)")
 ylabel!(L"$FRQ_{tot}$, $WC-1_{tot}$, a.u.")
 savefig("figure2A.svg")
@@ -103,12 +104,14 @@ savefig("figure2C.svg")
 
 
 function bifurcation_model(u, p)
-    param_type = typeof(first(values(p.k0)))
-    
-    # 2. Promote between the state 'u' and the parameter type
+    param_type = typeof(p.k0.one) ## these screw up type inference for some reason
+    param_type2 = typeof(p.k0.four) ## so we promote the type
+
+    # Promote between the state 'u' and the parameter type
     T = promote_type(eltype(u), param_type)
+    T = promote_type(T, param_type2)
     
-    # 3. Create du with the promoted type
+    # Create du with the promoted type
     du = similar(u, T)
 
     model(du, u, p, 0.0)
@@ -121,16 +124,17 @@ u_end = fill(1.0, 9) # have to just set everything to one instead
 
 
 
-function calculate_period(optic, params=params)
+function calculate_period(optic, params=params, u=u_end)
     # define the bifurcation based on our parameter (i.e. k01)
-    prob = BK.BifurcationProblem(bifurcation_model, u_end, params, optic)
+    prob = BK.BifurcationProblem(bifurcation_model, u, params, optic)
 
     # Establish the sweep for the k0 param
     k0_range = BK.ContinuationPar(
         p_min = 0.0, 
         p_max = 2.0,
         ds = 0.01,
-        dsmax = 0.01 # ensures that we get lots of points for plotting
+        dsmax = 0.01, # ensures that we get lots of points for plotting
+        detect_bifurcation = 2,
     )
 
     # calculate hopf points
@@ -176,13 +180,35 @@ savefig("figure3A.svg")
 #There is no hopf point for this one, need to use the above to take our established period
 # from the ode solution
 
+function period_no_hopf(optic, parameters=params)
+
+    one_period_problem = DE.ODEProblem(model, original_sol.u[end], (0, 25), params)
+    one_period_sol = DE.solve(one_period_problem)
+    prob_bif = BK.ODEBifProblem(bifurcation_model, u_end, parameters, optic;)
+    k03_range = BK.ContinuationPar(
+        p_min = 0.0, 
+        p_max = 1.0,
+        ds = 0.01,
+        dsmax = 0.01
+    )
+    period_prob = BK.PeriodicOrbitTrapProblem(M=200)
+    print(parameters)
+    probtrap, ci = BK.generate_ci_problem(period_prob,
+	                                  prob_bif, one_period_sol, (0, 22))
+    opts_po_cont = BK.ContinuationPar(k03_range, max_steps = 1800, tol_stability = 1e-5)
+    brpo_fold = BK.continuation(probtrap, ci, BK.PALC(), opts_po_cont;
+	                        verbosity = 3, plot = true)
+    return brpo_fold
+end
+    
+
 one_period_problem = DE.ODEProblem(model, original_sol.u[end], (0, 25), params)
 
 one_period_sol = DE.solve(one_period_problem)
 
 period_branch = calculate_period((@optic _.k0.three))
 plot(period_branch)
-savefig("figure2b_no_hopf_points.svg")
+savefig("figure3b_no_hopf_points.svg")
 
 prob_bif = BK.ODEBifProblem(bifurcation_model, u_end, params, (@optic _.k0.three);)
 
@@ -195,11 +221,11 @@ k03_range = BK.ContinuationPar(
 
 period_prob = BK.PeriodicOrbitTrapProblem(M=200)
 probtrap, ci = BK.generate_ci_problem(period_prob,
-	                              prob_bif, original_sol, (0, 22))
+	                              prob_bif, one_period_sol, (0, 22))
 
 opts_po_cont = BK.ContinuationPar(k03_range, max_steps = 1800, tol_stability = 1e-5)
 brpo_fold = BK.continuation(probtrap, ci, BK.PALC(), opts_po_cont;
-	verbosity = 3, plot = true, argspo...)
+	verbosity = 3, plot = true)
 plot(brpo_fold, vars = (:param, :period),
      xlabel = L"rate of $wc-1$ overexpression $k_{03}$",
      ylabel = "period, h",
@@ -209,7 +235,34 @@ plot(brpo_fold, vars = (:param, :period),
 
 # savefig("figure3B.svg")
 
+# wc-1 knockout
+k7_0_params = @set params.k[7] = 0.0
+k7_0_params = @set k7_0_params.k0.three = 0.0
+problem = DE.ODEProblem(model, u0, tspan, k7_0_params)
+sol = DE.solve(problem)
+plot(sol.t, sol[1, :])
+period_branch = calculate_period((@optic _.k0.three), k7_0_params)
+period_branch = period_no_hopf((@optic _.k0.three), k7_0_params)
+
+plot(period_branch, vars = (:param, :period),
+     xlabel = L"rate of $csp-1$ overexpression $k_{04}$",
+     ylabel = "period, h",
+     xlims = (0, 0.26),
+     ylims = (20, 26)
+     )
+savefig("figure3C.svg")
 
 # need to set csp-1 expression constant k16=0
-params = (k=k, K=K, k0=k0)
-period_branch = calculate_period((@optic _.k0.four))
+
+k16_0_params = @set params.k[16] = 0.2
+period_branch = calculate_period((@optic _.k0.four), k16_0_params)
+
+
+original_sol = DE.solve(problem)
+plot(period_branch, vars = (:param, :period),
+     xlabel = L"rate of $csp-1$ overexpression $k_{04}$",
+     ylabel = "period, h",
+     xlims = (0, 0.26),
+     ylims = (20, 26)
+     )
+savefig("figure3D.svg")
