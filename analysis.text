@@ -1,0 +1,104 @@
+import DifferentialEquations as DE
+using Plots
+using LaTeXStrings
+
+
+# rate constants
+k = [1.8, 1.8, 0.05, 0.23, 0.27, 0.27, 0.5, 1, 40, 0.1, 0.05, 0.02, 50, 1, 5, 0.12, 1.4, 50, 1.4]
+
+# these are 0 indexed because the authors hate me :),
+# so add 1 to all indicies compared to the paper. e.g. K = K[1] K_1 = K[2] etc
+K = [1.25, 3, 1, 10, 3]
+
+
+k0 = Dict(1 => 0, 3 => 0, 4 => 0)
+
+function model(du, u, p, t)
+    dui = Dict("frq mRNA" => 1,
+              "FRQ_c" => 2,
+              "FRQ_n" => 3,
+              "wc-1 mRNA" => 4,
+              "WC-1_c" => 5,
+              "WC-1_n" => 6,
+              "FRQ_n:WC-1_n" => 7,
+              "csp-1 mRNA" => 8,
+              "CSP-1" => 9)
+
+    u = Dict("frq mRNA" => u[1],
+              "FRQ_c" => u[2],
+              "FRQ_n" => u[3],
+              "wc-1 mRNA" => u[4],
+              "WC-1_c" => u[5],
+              "WC-1_n" => u[6],
+              "FRQ_n:WC-1_n" => u[7],
+              "csp-1 mRNA" => u[8],
+             "CSP-1" => u[9])
+
+    du[dui["frq mRNA"]] = k[1] * ((u["WC-1_n"]^6)/(K[1] + u["WC-1_n"]^6)) - k[4] * u["frq mRNA"] + k0[1]
+
+    du[dui["FRQ_c"]] = k[2] * u["frq mRNA"] - (k[3] + k[5]) * u["FRQ_c"]
+
+    du[dui["FRQ_n"]] = k[3] * u["FRQ_c"] + k[14] * u["FRQ_n:WC-1_n"] - u["FRQ_n"] * (k[6] + k[13] * u["WC-1_n"])
+
+    du[dui["wc-1 mRNA"]] = k[7] * (K[2]/(K[2] + u["CSP-1"])) - k[10] * u["wc-1 mRNA"] + k0[3]
+
+    du[dui["WC-1_c"]] = k[8] * ((u["FRQ_c"]^2)/(K[3] + u["FRQ_c"]^2)) * (u["wc-1 mRNA"]/(K[4]+ u["wc-1 mRNA"])) - (k[9] + k[11]) * u["WC-1_c"]
+
+    du[dui["WC-1_n"]] = k[9] * u["WC-1_c"] - u["WC-1_n"] * (k[12] + k[13] * u["FRQ_n"]) + k[14] * u["FRQ_n:WC-1_n"]
+
+    du[dui["FRQ_n:WC-1_n"]] = k[13] * u["FRQ_n"] * u["WC-1_n"] - (k[14] + k[15]) * u["FRQ_n:WC-1_n"]
+
+    du[dui["csp-1 mRNA"]] = k[16] * u["WC-1_n"] * (K[5]/(K[5] + u["CSP-1"])) - k[17] * u["csp-1 mRNA"] + k0[4]
+
+    du[dui["CSP-1"]] = k[18] * u["csp-1 mRNA"] - k[19] * u["CSP-1"]
+    
+
+end
+
+
+
+u0 = fill(10, 9) # need to give the initial condition at least a 1 to occilate
+tspan = (0.0, 3000)
+
+problem = DE.ODEProblem(model, u0, tspan)
+
+sol = DE.solve(problem)
+
+sol = sol(sol.t[sol.t .>= 500])
+
+
+solution = Dict("frq mRNA" => sol[1, :],
+                "FRQ_c" => sol[2, :],
+                "FRQ_n" => sol[3, :],
+                "wc-1 mRNA" => sol[4, :],
+                "WC-1_c" => sol[5, :],
+                "WC-1_n" => sol[6, :],
+                "FRQ_n:WC-1_n" => sol[7, :],
+                "csp-1 mRNA" => sol[8, :],
+                "CSP-1" => sol[9, :],
+                "WC-1_tot" => sol[5, :] + sol[6, :] + sol[7, :],
+                "FRQ_tot" => sol[2, :] + sol[3, :] + sol[7, :],
+                "time" => sol.t .- 500
+                )
+
+plot(solution["time"], solution["WC-1_tot"], label=L"WC-1_{tot}", xlims=(0, 48))
+plot!(solution["time"], solution["FRQ_tot"], label=L"[FRQ_{tot}]", xlims=(0, 48))
+xlabel!("Time (h)")
+ylabel!(L"$FRQ_{tot}$, $WC-1_{tot}$, a.u.")
+savefig("figure2A.svg")
+
+plot(solution["time"], solution["WC-1_n"], label=L"WC-1_n", xlims=(0, 48))
+plot!(solution["time"], solution["FRQ_n"], label=L"[FRQ_n]", xlims=(0, 48))
+xlabel!("Time (h)")
+ylabel!(L"$WC-1_n$, [$FRQ_n$], a.u.")
+savefig("figure2B.svg")
+
+plot(solution["time"], solution["frq mRNA"], label=L"$frq$ mRNA", xlims=(0, 48))
+plot!(solution["time"], solution["wc-1 mRNA"], label=L"$wc-1$ mRNA", xlims=(0, 48))
+plot!(solution["time"], solution["csp-1 mRNA"], label=L"$csp-1$ mRNA", xlims=(0, 48))
+xlabel!("Time (h)")
+ylabel!(L"[$frq$ mRNA], [$FRQ_n$], a.u.")
+savefig("figure2C.svg")
+
+# For Figures 3A-C we're using Bifurcationkit
+# see: https://docs.sciml.ai/BifurcationKit/stable/tutorials/tutorials3/#brusauto
