@@ -106,12 +106,14 @@ savefig("figure2C.svg")
 function bifurcation_model(u, p)
     param_type = typeof(p.k0.one) ## these screw up type inference for some reason
     param_type2 = typeof(p.k0.four) ## so we promote the type
-    param_type3 = typeof(p.k0.three) 
+    param_type3 = typeof(p.k0.three)
+    param_type4 = typeof(p.k[7])
 
     # Promote between the state 'u' and the parameter type
     T = promote_type(eltype(u), param_type)
     T = promote_type(T, param_type2)
     T = promote_type(T, param_type3)
+    T = promote_type(T, param_type4)
     
     # Create du with the promoted type
     du = similar(u, T)
@@ -126,7 +128,7 @@ u_end = fill(1.0, 9) # have to just set everything to one instead
 
 
 
-function calculate_period(optic, params=params, u=u_end; step_direction=1)
+function calculate_period(optic, params=params; u=u_end, step_direction=1, return_br=false)
     # define the bifurcation based on our parameter (i.e. k01)
     prob = BK.BifurcationProblem(bifurcation_model, u, params, optic)
 
@@ -136,7 +138,8 @@ function calculate_period(optic, params=params, u=u_end; step_direction=1)
         p_max = 2.0,
         ds = 0.01 * step_direction,
         dsmax = 0.01, # ensures that we get lots of points for plotting
-        detect_bifurcation = 2,
+        detect_bifurcation = 3,
+        detect_fold= true,
         max_steps = 1800
     )
 
@@ -152,6 +155,10 @@ function calculate_period(optic, params=params, u=u_end; step_direction=1)
         return br
     end
 
+    if return_br
+        return br
+    end
+
     # trapezoidal estimation of period orbits
     # this isn't exactly equivalent to xppaut, but close enough
     # and it's much faster to compute
@@ -162,7 +169,8 @@ function calculate_period(optic, params=params, u=u_end; step_direction=1)
         br, 1, # Ensure '1' is the index of the hopf point
         k0_range, 
         period_prob;
-        nev=100
+        nev=1000,
+
     )
     
     return period_branch
@@ -271,3 +279,65 @@ plot(period_branch, vars = (:param, :period),
      ylims = (20, 26)
      )
 savefig("figure3D.svg")
+
+k7_params = @set params.k[7] = 0.5
+k7_params = @set k7_params.k[16] = 0
+
+period_branch = calculate_period((@optic _.k[7]), k7_params; step_direction=-1)
+plot(period_branch, vars = (:param, :period),
+     xlabel = L"rate of $wc-1$ expression $k_{7}$",
+     ylabel = "period, h",
+     xlims = (0, 2.0),
+     ylims = (19, 26)
+     )
+savefig("figure4A.svg")
+/
+
+function plot_one_condition_vs_param(condition, period_branch)
+    max_u = []
+    min_u = []
+    for i_sol in 1:1:length(period_branch)
+        traj = BK.get_periodic_orbit(period_branch, i_sol)
+        push!(max_u, maximum(traj[condition, :]))
+        push!(min_u, minimum(traj[condition, :]))
+
+    end
+    p = plot(period_branch.param, max_u; label="max")
+    plot!(period_branch.param, min_u; label="min")
+
+    return p
+end
+
+plot_one_condition_vs_param(DUI.FRQ_n, period_branch)
+xlabel!("K7")
+ylabel!("FRQ_n")
+savefig("figure4B.svg")
+
+    
+
+period_br = calculate_period((@optic _.k[7]), k7_params; step_direction=-1, return_br = true)
+function plot_one_condition_steady_vs_param(condition, period_branch)
+    p = []
+    value = []
+    for i_sol in 1:1:length(period_branch.sol)
+        traj = period_branch.sol[i_sol]
+        push!(p, traj.p)
+        push!(value, traj.x[condition])
+
+    end
+    p = plot!(p, value; label="unstable")
+
+    return p
+end
+
+plot_one_condition_vs_param(DUI.WC1_n, period_branch)
+plot_one_condition_steady_vs_param(DUI.WC1_n, period_br)
+
+k7_params = @set params.k[7] = 2.0
+k7_params = @set k7_params.k[16] = 0
+
+period_br = calculate_period((@optic _.k[7]), k7_params; u=fill(10.0, 9), step_direction=-1, return_br=true)
+
+plot_one_condition_vs_param(DUI.WC1_n, period_branch)
+plot_one_condition_steady_vs_param(DUI.WC1_n, period_br)
+savefig("figure4C.svg")
