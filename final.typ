@@ -77,7 +77,7 @@
 
 = Code
 
-#pdf.attach("notebook.html", description: "Html document", relationship: "data", mime-type: "text/html")
+Nicer code link: https://illustratedman-code.github.io/compsys-final/
 
 #let code = read("notebook.jl")
 #let lines = code.split("\n").slice(0, 457)
