@@ -4,7 +4,7 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 39d6c1da-3a62-11f1-9a06-bb055ee3b6ee
+# ╔═╡ cecd1f2a-0c8c-405b-9323-9e84707bfb54
 begin
 	import DifferentialEquations as DE
 	using Plots
@@ -12,18 +12,29 @@ begin
 	import BifurcationKit as BK
 	import BifurcationKit: @optic
 	using Accessors #for dealing with updating params tuple in a not horrible way
-	
-	
-	# rate constants
+	md"""
+	Imports
+	"""
+end
+
+# ╔═╡ eaa483e0-4e41-4dca-86e8-9f5eb92a73d1
+begin
 	k = (1.8, 1.8, 0.05, 0.23, 0.27, 0.27, 0.5, 1, 40, 0.1, 0.05, 0.02, 50, 1, 5, 0.12, 1.4, 50, 1.4)
 	
 	# these are 0 indexed because the authors hate me :),
 	# so add 1 to all indicies compared to the paper. e.g. K = K[1] K_1 = K[2] etc
 	K = (1.25, 3, 1, 10, 3)
 	
-	
 	k0 = (one = 0.0, three = 0.0, four = 0.0)
 	
+	md"""
+	Parameters
+	"""
+	
+end
+
+# ╔═╡ cf1818b8-63d1-4551-b521-734609b304c6
+begin
 	const DUI = (
 	    frq_mRNA = 1, FRQ_c = 2, FRQ_n = 3, 
 	    wc1_mRNA = 4, WC1_c = 5, WC1_n = 6, 
@@ -58,7 +69,10 @@ begin
 	    du[DUI.CSP1] = k[18] * c_mRNA - k[19] * CSP1
 	end
 	
-	
+end
+
+# ╔═╡ e78c2040-0362-4db5-904a-739881c55c67
+begin
 	u0 = fill(1.0, 9) # need to give the initial condition at least a 1 to occilate
 	tspan = (0.0, 3000)
 	
@@ -70,235 +84,376 @@ begin
 	
 	sol = original_sol(original_sol.t[original_sol.t .>= 500])
 	
-	
-	solution = Dict("frq mRNA" => sol[1, :],
-	                "FRQ_c" => sol[2, :],
-	                "FRQ_n" => sol[3, :],
-	                "wc-1 mRNA" => sol[4, :],
-	                "WC-1_c" => sol[5, :],
-	                "WC-1_n" => sol[6, :],
-	                "FRQ_n:WC-1_n" => sol[7, :],
-	                "csp-1 mRNA" => sol[8, :],
-	                "CSP-1" => sol[9, :],
-	                "WC-1_tot" => sol[5, :] + sol[6, :] + sol[7, :],
-	                "FRQ_tot" => sol[2, :] + sol[3, :] + sol[7, :],
-	                "time" => sol.t .- 500
-	                )
-	
-	plot(solution["time"], solution["WC-1_tot"], label=L"WC-1_{tot}", xlims=(0, 48))
+end
+
+# ╔═╡ 51fbb9cb-fec1-43d6-9123-96adcabf3d16
+solution = Dict("frq mRNA" => sol[1, :],
+                "FRQ_c" => sol[2, :],
+                "FRQ_n" => sol[3, :],
+                "wc-1 mRNA" => sol[4, :],
+                "WC-1_c" => sol[5, :],
+                "WC-1_n" => sol[6, :],
+                "FRQ_n:WC-1_n" => sol[7, :],
+                "csp-1 mRNA" => sol[8, :],
+                "CSP-1" => sol[9, :],
+                "WC-1_tot" => sol[5, :] + sol[6, :] + sol[7, :],
+                "FRQ_tot" => sol[2, :] + sol[3, :] + sol[7, :],
+                "time" => sol.t .- 500
+                )
+
+
+# ╔═╡ f2981768-ea50-4881-83dd-a85f1b0461f6
+md"""
+Figure 2A
+"""
+
+# ╔═╡ 81d3cc77-6695-42bf-8ef4-9e7fe18373d8
+begin
+	figure2A = plot(solution["time"], solution["WC-1_tot"], label=L"WC-1_{tot}", xlims=(0, 48))
 	plot!(solution["time"], solution["FRQ_tot"], label=L"[FRQ_{tot}]", xlims=(0, 48))
 	# plot(solution["time"], solution["WC-1_tot"], label=L"WC-1_{tot}")
 	# plot!(solution["time"], solution["FRQ_tot"], label=L"[FRQ_{tot}]")
 	xlabel!("Time (h)")
 	ylabel!(L"$FRQ_{tot}$, $WC-1_{tot}$, a.u.")
-	savefig("figure2A.svg")
-	
-	plot(solution["time"], solution["WC-1_n"], label=L"WC-1_n", xlims=(0, 48))
+	savefig("Figure-2A.svg")
+	figure2A
+end
+
+# ╔═╡ b584625a-641d-4d8b-9d96-05b9323771d4
+md"""
+Figure 2B
+"""
+
+# ╔═╡ 5a45f599-996d-4b56-a52d-9004b1c9fa85
+begin
+	figure2B = plot(solution["time"], solution["WC-1_n"], label=L"WC-1_n", xlims=(0, 48))
 	plot!(solution["time"], solution["FRQ_n"], label=L"[FRQ_n]", xlims=(0, 48))
 	xlabel!("Time (h)")
 	ylabel!(L"$WC-1_n$, [$FRQ_n$], a.u.")
-	savefig("figure2B.svg")
+	savefig("Figure-2B.svg")
+	figure2B
+end
+
+# ╔═╡ 43ae3d5f-6604-4002-b5a3-84e0215421e4
+md"""Figure 2C"""
+
+# ╔═╡ 23434a30-8901-4115-9d30-87f7f3799f16
+begin
+figure2C = plot(solution["time"], solution["frq mRNA"], label=L"$frq$ mRNA", xlims=(0, 48))
+plot!(solution["time"], solution["wc-1 mRNA"], label=L"$wc-1$ mRNA", xlims=(0, 48))
+
+figure2C_twin = twinx(figure2C)
+plot!(figure2C_twin, solution["time"], solution["csp-1 mRNA"], label=L"$csp-1$ mRNA", xlims=(0, 48), ylims=(0, 0.3), legend=true, color="green")
+xlabel!(figure2C_twin, "Time (h)")
+ylabel!(L"[$frq$ mRNA], [$FRQ_n$], a.u.")
+ylabel!(figure2C_twin, L"[$csp-1$ mRNA], a.u.")
+savefig("Figure-2C.svg")
+figure2C
+end
+
+
+# ╔═╡ 33dcd342-73ef-4a4c-bcff-be9ca322394a
+function bifurcation_model(u, p)
+    param_type = typeof(p.k0.one) ## these screw up type inference for some reason
+    param_type2 = typeof(p.k0.four) ## so we promote the type
+    param_type3 = typeof(p.k0.three)
+    param_type4 = typeof(p.k[7])
+
+    # Promote between the state 'u' and the parameter type
+    T = promote_type(eltype(u), param_type)
+    T = promote_type(T, param_type2)
+    T = promote_type(T, param_type3)
+    T = promote_type(T, param_type4)
+    
+    # Create du with the promoted type
+    du = similar(u, T)
+
+    model(du, u, p, 0.0)
+    return du
+end
+
+
+# ╔═╡ 1116de3d-2887-4147-bcf1-748a1b922a2f
+begin
+u_end = sol.u[end-1] # this doesn't give hopf points in figure4A for some reason
+u_end = fill(1.0, 9) # have to just set everything to one instead
+md"""setting initial conditions"""
+end
+
+# ╔═╡ 4c1cda2a-b40b-4061-b462-871345c56a74
+function calculate_period(optic, params=params; u=u_end, step_direction=1, return_br=false)
+    # define the bifurcation based on our parameter (i.e. k01)
+    prob = BK.BifurcationProblem(bifurcation_model, u, params, optic)
+
+    # Establish the sweep for the k0 param
+    k0_range = BK.ContinuationPar(
+        p_min = 0.0, 
+        p_max = 2.0,
+        ds = 0.01 * step_direction,
+        dsmax = 0.01, # ensures that we get lots of points for plotting
+        detect_bifurcation = 3,
+        detect_fold= true,
+        max_steps = 1800
+    )
+
+    # calculate hopf points
+    br = BK.continuation(prob, BK.PALC(), k0_range)
+    plot(br)
+    savefig("br.svg")
+    print(br)
+    if length(br.specialpoint) < 2
+        # ideally we only get two special points, the end point and the hopf point
+        # if not, then return this object for debugging
+        print("There are no hopf points")
+        return br
+    end
+
+    if return_br
+        return br
+    end
+
+    # trapezoidal estimation of period orbits
+    # this isn't exactly equivalent to xppaut, but close enough
+    # and it's much faster to compute
+    period_prob = BK.PeriodicOrbitTrapProblem(M=200)
+    
+    # compute the period vs param based on the hopf point
+    period_branch = BK.continuation(
+        br, 1, # Ensure '1' is the index of the hopf point
+        k0_range, 
+        period_prob;
+        nev=1000,
+
+    )
+    
+    return period_branch
+
+end
+
+
+# ╔═╡ faf2d03b-fc6c-41a1-8c17-5e57a7b7409b
+md"""
+Figure 3A
+"""
+
+# ╔═╡ b3de8be2-61c0-42cb-84d4-2746f8b7ef5c
+period_branch = calculate_period((@optic _.k0.one))
+
+# ╔═╡ 18c7b721-165d-4ffa-bc3b-f96d279d1a4f
+begin
 	
-	plot(solution["time"], solution["frq mRNA"], label=L"$frq$ mRNA", xlims=(0, 48))
-	plot!(solution["time"], solution["wc-1 mRNA"], label=L"$wc-1$ mRNA", xlims=(0, 48))
-	plot!(solution["time"], solution["csp-1 mRNA"], label=L"$csp-1$ mRNA", xlims=(0, 48))
-	xlabel!("Time (h)")
-	ylabel!(L"[$frq$ mRNA], [$FRQ_n$], a.u.")
-	savefig("figure2C.svg")
-	
-	# For Figures 3A-C and 4A-C we're using Bifurcationkit
-	# see: https://docs.sciml.ai/BifurcationKit/stable/tutorials/tutorials3/#brusauto
-	# Use a NamedTuple for indices instead of a Dict for better performance/type safety
-	
-	
-	function bifurcation_model(u, p)
-	    param_type = typeof(p.k0.one) ## these screw up type inference for some reason
-	    param_type2 = typeof(p.k0.four) ## so we promote the type
-	    param_type3 = typeof(p.k0.three)
-	    param_type4 = typeof(p.k[7])
-	
-	    # Promote between the state 'u' and the parameter type
-	    T = promote_type(eltype(u), param_type)
-	    T = promote_type(T, param_type2)
-	    T = promote_type(T, param_type3)
-	    T = promote_type(T, param_type4)
-	    
-	    # Create du with the promoted type
-	    du = similar(u, T)
-	
-	    model(du, u, p, 0.0)
-	    return du
-	end
-	
-	
-	u_end = sol.u[end-1] # this doesn't give hopf points in figure4A for some reason
-	u_end = fill(1.0, 9) # have to just set everything to one instead
-	
-	
-	
-	function calculate_period(optic, params=params, u=u_end; step_direction=1)
-	    # define the bifurcation based on our parameter (i.e. k01)
-	    prob = BK.BifurcationProblem(bifurcation_model, u, params, optic)
-	
-	    # Establish the sweep for the k0 param
-	    k0_range = BK.ContinuationPar(
-	        p_min = 0.0, 
-	        p_max = 2.0,
-	        ds = 0.01 * step_direction,
-	        dsmax = 0.01, # ensures that we get lots of points for plotting
-	        detect_bifurcation = 2,
-	        max_steps = 1800
-	    )
-	
-	    # calculate hopf points
-	    br = BK.continuation(prob, BK.PALC(), k0_range)
-	    plot(br)
-	    savefig("br.svg")
-	    print(br)
-	    if length(br.specialpoint) < 2
-	        # ideally we only get two special points, the end point and the hopf point
-	        # if not, then return this object for debugging
-	        print("There are no hopf points")
-	        return br
-	    end
-	
-	    # trapezoidal estimation of period orbits
-	    # this isn't exactly equivalent to xppaut, but close enough
-	    # and it's much faster to compute
-	    period_prob = BK.PeriodicOrbitTrapProblem(M=200)
-	    
-	    # compute the period vs param based on the hopf point
-	    period_branch = BK.continuation(
-	        br, 1, # Ensure '1' is the index of the hopf point
-	        k0_range, 
-	        period_prob;
-	        nev=100
-	    )
-	    
-	    return period_branch
-	
-	end
-	
-	
-	period_branch = calculate_period((@optic _.k0.one))
-	plot(period_branch, vars = (:param, :period),
+	figure3A = plot(period_branch, vars = (:param, :period),
 	     xlabel = L"rate of $frq$ overexpression $k_{01}$",
 	     ylabel = "period, h",
 	     xlims = (0, 0.21),
 	     ylims = (16, 28)
 	     )
-	
-	savefig("figure3A.svg")
-	
-	#https://bifurcationkit.github.io/BifurcationKitDocs.jl/dev/tutorials/ode/tutorialsCodim2PO/#Periodic-predator-prey-model
-	#There is no hopf point for this one, need to use the above to take our established period
-	# from the ode solution
-	
-	function period_no_hopf(optic, parameters=params)
-	
-	    one_period_problem = DE.ODEProblem(model, original_sol.u[end], (0, 25), params)
-	    one_period_sol = DE.solve(one_period_problem)
-	    prob_bif = BK.ODEBifProblem(bifurcation_model, u_end, parameters, optic;)
-	    k03_range = BK.ContinuationPar(
-	        p_min = 0.0, 
-	        p_max = 1.0,
-	        ds = 0.01,
-	        dsmax = 0.01
-	    )
-	    period_prob = BK.PeriodicOrbitTrapProblem(M=200)
-	    print(parameters)
-	    probtrap, ci = BK.generate_ci_problem(period_prob,
-		                                  prob_bif, one_period_sol, (0, 22))
-	    opts_po_cont = BK.ContinuationPar(k03_range, max_steps = 1800, tol_stability = 1e-5)
-	    brpo_fold = BK.continuation(probtrap, ci, BK.PALC(), opts_po_cont;
-		                        verbosity = 3, plot = true)
-	    return brpo_fold
-	end
-	    
-	
-	one_period_problem = DE.ODEProblem(model, original_sol.u[end], (0, 25), params)
-	
-	one_period_sol = DE.solve(one_period_problem)
-	
-	period_branch = calculate_period((@optic _.k0.three))
-	plot(period_branch)
-	savefig("figure3b_no_hopf_points.svg")
-	
-	prob_bif = BK.ODEBifProblem(bifurcation_model, u_end, params, (@optic _.k0.three);)
-	
-	k03_range = BK.ContinuationPar(
-	    p_min = 0.0, 
-	    p_max = 1.0,
-	    ds = 0.01,
-	    dsmax = 0.01
-	)
-	
-	period_prob = BK.PeriodicOrbitTrapProblem(M=200)
-	probtrap, ci = BK.generate_ci_problem(period_prob,
-		                              prob_bif, one_period_sol, (0, 22))
-	
-	opts_po_cont = BK.ContinuationPar(k03_range, max_steps = 1800, tol_stability = 1e-5)
-	brpo_fold = BK.continuation(probtrap, ci, BK.PALC(), opts_po_cont;
-		verbosity = 3, plot = true)
-	plot(brpo_fold, vars = (:param, :period),
-	     xlabel = L"rate of $wc-1$ overexpression $k_{03}$",
-	     ylabel = "period, h",
-	     xlims = (0, 1),
-	     ylims = (19, 24)
-	     )
-	
-	# savefig("figure3B.svg")
-	
-	# wc-1 knockout
+	savefig("Figure-3A.svg")
+	figure3A
+end
+
+# ╔═╡ 78e71262-628d-4d41-a61d-50c0526b4908
+function period_no_hopf(optic, parameters=params)
+
+    one_period_problem = DE.ODEProblem(model, original_sol.u[end], (0, 25), params)
+    one_period_sol = DE.solve(one_period_problem)
+    prob_bif = BK.ODEBifProblem(bifurcation_model, u_end, parameters, optic;)
+    k03_range = BK.ContinuationPar(
+        p_min = 0.0, 
+        p_max = 1.0,
+        ds = 0.01,
+        dsmax = 0.01
+    )
+    period_prob = BK.PeriodicOrbitTrapProblem(M=200)
+    print(parameters)
+    probtrap, ci = BK.generate_ci_problem(period_prob,
+	                                  prob_bif, one_period_sol, (0, 22))
+    opts_po_cont = BK.ContinuationPar(k03_range, max_steps = 1800, tol_stability = 1e-5)
+    brpo_fold = BK.continuation(probtrap, ci, BK.PALC(), opts_po_cont;
+	                        verbosity = 3, plot = true)
+    return brpo_fold
+end
+
+
+# ╔═╡ 791547fc-f77f-4713-a3cd-e7e158150a53
+brpo_fold = period_no_hopf(@optic _.k0.three)
+
+# ╔═╡ 4c02ee18-0135-43f6-b8b2-ab3751b8bc28
+begin
+figure3B = plot(brpo_fold, vars = (:param, :period),
+     xlabel = L"rate of $wc-1$ overexpression $k_{03}$",
+     ylabel = "period, h",
+     xlims = (0, 1),
+     ylims = (19, 24)
+     )
+savefig("Figure-3B.svg")
+figure3B
+end
+
+# ╔═╡ 398ab915-d292-4fe8-8de6-4250b676e7df
+begin
 	k7_0_params = @set params.k[7] = 0.0
 	k7_0_params = @set k7_0_params.k0.three = 0.5
-	problem = DE.ODEProblem(model, u_end, tspan, k7_0_params)
-	sol = DE.solve(problem)
-	plot(sol.t, sol[1, :])
-	period_branch = calculate_period((@optic _.k0.three), k7_0_params; step_direction=-1)
-	#period_branch = period_no_hopf((@optic _.k0.three), k7_0_params)
-	
-	plot(period_branch, vars = (:param, :period),
-	     xlabel = L"rate of $csp-1$ overexpression $k_{04}$",
-	     ylabel = "period, h",
-	     xlims = (0, 1.1),
-	     ylims = (20, 26)
-	     )
-	savefig("figure3C.svg")
-	
-	# need to set csp-1 expression constant k16=0
-	
-	k16_0_params = @set params.k[16] = 0.0
-	
-	period_branch = calculate_period((@optic _.k0.four), k16_0_params)
-	
-	
-	original_sol = DE.solve(problem)
-	plot(period_branch, vars = (:param, :period),
+end
+
+# ╔═╡ c3475b10-a4cd-4ccd-8d89-c117f30e47e7
+period_branch_figure_3c = calculate_period((@optic _.k0.three), k7_0_params; step_direction=-1)
+
+
+# ╔═╡ 159d2889-43e6-43c5-82c7-972f6ab03b9b
+begin
+figure3C = plot(period_branch_figure_3c, vars = (:param, :period),
+     xlabel = L"rate of $csp-1$ overexpression $k_{04}$",
+     ylabel = "period, h",
+     xlims = (0, 1.1),
+     ylims = (20, 26)
+     )
+savefig("Figure-3C.svg")
+figure3C
+end
+
+# ╔═╡ df93de58-a1cb-4ee4-a3e2-2217c631661e
+k16_0_params = @set params.k[16] = 0.0
+
+# ╔═╡ 8e545e6e-c917-4666-a72f-133b1a3f5cf7
+period_branch_figure_3D = calculate_period((@optic _.k0.four), k16_0_params)
+
+# ╔═╡ e91148ff-6acc-4be9-9c29-bee646bded34
+begin
+	figure3D = plot(period_branch_figure_3D, vars = (:param, :period),
 	     xlabel = L"rate of $csp-1$ overexpression $k_{04}$",
 	     ylabel = "period, h",
 	     xlims = (0, 0.26),
 	     ylims = (20, 26)
 	     )
-	savefig("figure3D.svg")
-	
+	savefig("Figure-3D.svg")
+	figure3D
+end
+
+# ╔═╡ b4cfe200-9ac6-4218-b633-593506894a3f
+begin
 	k7_params = @set params.k[7] = 0.5
-	
-	period_branch = calculate_period((@optic _.k[7]), k7_params; step_direction=-1)
-	plot(period_branch, vars = (:param, :period),
+	k7_params = @set k7_params.k[16] = 0
+end
+
+# ╔═╡ f25b1eb8-0abb-40ed-9960-71e6795b7119
+period_branch_figure_4A = calculate_period((@optic _.k[7]), k7_params; step_direction=-1)
+
+
+# ╔═╡ dc41454d-2964-494a-925c-dac4c0747520
+begin
+	figure4A = plot(period_branch_figure_4A, vars = (:param, :period),
 	     xlabel = L"rate of $wc-1$ expression $k_{7}$",
 	     ylabel = "period, h",
 	     xlims = (0, 2.0),
 	     ylims = (19, 26)
 	     )
-	savefig("figure4A.svg")
+	savefig("Figure-4A.svg")
+	figure4A
 end
 
-# ╔═╡ cecd1f2a-0c8c-405b-9323-9e84707bfb54
+# ╔═╡ 440d406e-cf56-47c9-8e99-9b911c9270b2
+function plot_one_condition_vs_param(condition, period_branch)
+    max_u = []
+    min_u = []
+    for i_sol in 1:1:length(period_branch)
+        traj = BK.get_periodic_orbit(period_branch, i_sol)
+        push!(max_u, maximum(traj[condition, :]))
+        push!(min_u, minimum(traj[condition, :]))
+
+    end
+    p = plot(period_branch.param, max_u; label="max")
+    plot!(period_branch.param, min_u; label="min")
+
+    return p
+end
 
 
-# ╔═╡ eaa483e0-4e41-4dca-86e8-9f5eb92a73d1
+# ╔═╡ 1d002879-e74b-4551-9b5c-52b1e8c4f161
+function plot_one_condition_steady_vs_param(condition, period_branch)
+    p = []
+    value = []
+    for i_sol in 1:1:length(period_branch.sol)
+        traj = period_branch.sol[i_sol]
+        push!(p, traj.p)
+        push!(value, traj.x[condition])
 
+    end
+	ps = [[p[1]]]
+	values = [[value[1]]]
+	stable = [period_branch.stable[1] == false ? "unstable" : "stable"]
+	for i in range(2, length(period_branch.stable))
+		if period_branch.stable[i] == true && period_branch.stable[i-1] == true
+			push!(ps[end], p[i])
+			push!(values[end], value[i])
+		elseif period_branch.stable[i] == false && period_branch.stable[i-1] == false
+			push!(ps[end], p[i])
+			push!(values[end], value[i])
+		else
+			push!(stable, period_branch.stable[i] == false ? "unstable" : "stable")
+			push!(ps, [p[i]])
+			push!(values, [value[i]])
+		end
+	end
+
+	seen_labels = Set([])
+	for (p_i, val, stable_i) in zip(ps, values, stable)
+		stable_label = stable_i ∈ seen_labels ? "" : stable_i
+			
+		if stable_i == "unstable"
+			plot!(p_i, val; label=stable_label, linestyle = :dash, color="black")
+			push!(seen_labels, stable_i)
+		else
+			plot!(p_i, val; label=stable_label, color="black")
+			push!(seen_labels, stable_i)
+		end
+	end
+	scatter!([p[period_branch.specialpoint[1].idx]], [value[period_branch.specialpoint[1].idx]], color="red", label="Hopf point" )
+	#stability = [x == false ? "unstable" : "stable" for x in period_branch.stable]
+    #p = plot!(p, value; group=stability, linestyle = :dash)
+	return stable
+end
+
+
+# ╔═╡ 2dbdf652-4f2c-4bb6-b55d-d89ef0efb2c4
+begin
+	k7_params_large = @set params.k[7] = 2.0
+	k7_params_large = @set k7_params_large.k[16] = 0
+end
+
+# ╔═╡ cb7efa53-b940-4588-ab12-36189081d98d
+period_br = calculate_period((@optic _.k[7]), k7_params_large; u=fill(10.0, 9), step_direction=-1, return_br=true)
+
+
+# ╔═╡ b6b7dc51-4aac-4419-97d3-f77d45447ebb
+md"""Figure 4B"""
+
+# ╔═╡ c257c7c9-e801-40f4-9318-b6b42f1dd77e
+begin
+plot_4B = plot_one_condition_vs_param(DUI.FRQ_n, period_branch_figure_4A)
+plot_one_condition_steady_vs_param(DUI.FRQ_n, period_br)
+xlabel!(L"k_7")
+ylabel!(L"[FRQ_n]")
+lens!(plot_4B, [0.0, 0.5], [0.0, 0.025], inset = (1, bbox(0.45, 0.45, 0.4, 0.4)))
+savefig("Figure-4B.svg")
+plot_4B
+end
+
+
+# ╔═╡ b176e2d7-0f59-4978-91fe-1550f73d437e
+md"""
+Figure 4C
+"""
+
+# ╔═╡ d05c838a-eca8-4c20-a7b1-e9b83283a721
+begin
+figure4C = plot_one_condition_vs_param(DUI.WC1_n, period_branch_figure_4A)
+plot_one_condition_steady_vs_param(DUI.WC1_n, period_br)
+xlabel!(L"rate of $wc-1$ expression $k_7$")
+ylabel!(L"$[WC-1_n]$, a.u.")
+savefig("Figure-4C.svg")
+figure4C
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -3021,8 +3176,42 @@ version = "1.9.2+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═39d6c1da-3a62-11f1-9a06-bb055ee3b6ee
-# ╠═cecd1f2a-0c8c-405b-9323-9e84707bfb54
-# ╠═eaa483e0-4e41-4dca-86e8-9f5eb92a73d1
+# ╟─cecd1f2a-0c8c-405b-9323-9e84707bfb54
+# ╟─eaa483e0-4e41-4dca-86e8-9f5eb92a73d1
+# ╟─cf1818b8-63d1-4551-b521-734609b304c6
+# ╟─e78c2040-0362-4db5-904a-739881c55c67
+# ╟─51fbb9cb-fec1-43d6-9123-96adcabf3d16
+# ╟─f2981768-ea50-4881-83dd-a85f1b0461f6
+# ╠═81d3cc77-6695-42bf-8ef4-9e7fe18373d8
+# ╟─b584625a-641d-4d8b-9d96-05b9323771d4
+# ╠═5a45f599-996d-4b56-a52d-9004b1c9fa85
+# ╟─43ae3d5f-6604-4002-b5a3-84e0215421e4
+# ╠═23434a30-8901-4115-9d30-87f7f3799f16
+# ╟─33dcd342-73ef-4a4c-bcff-be9ca322394a
+# ╟─1116de3d-2887-4147-bcf1-748a1b922a2f
+# ╟─4c1cda2a-b40b-4061-b462-871345c56a74
+# ╟─faf2d03b-fc6c-41a1-8c17-5e57a7b7409b
+# ╟─b3de8be2-61c0-42cb-84d4-2746f8b7ef5c
+# ╠═18c7b721-165d-4ffa-bc3b-f96d279d1a4f
+# ╠═78e71262-628d-4d41-a61d-50c0526b4908
+# ╠═791547fc-f77f-4713-a3cd-e7e158150a53
+# ╠═4c02ee18-0135-43f6-b8b2-ab3751b8bc28
+# ╠═398ab915-d292-4fe8-8de6-4250b676e7df
+# ╟─c3475b10-a4cd-4ccd-8d89-c117f30e47e7
+# ╠═159d2889-43e6-43c5-82c7-972f6ab03b9b
+# ╠═df93de58-a1cb-4ee4-a3e2-2217c631661e
+# ╟─8e545e6e-c917-4666-a72f-133b1a3f5cf7
+# ╠═e91148ff-6acc-4be9-9c29-bee646bded34
+# ╟─b4cfe200-9ac6-4218-b633-593506894a3f
+# ╟─f25b1eb8-0abb-40ed-9960-71e6795b7119
+# ╠═dc41454d-2964-494a-925c-dac4c0747520
+# ╟─440d406e-cf56-47c9-8e99-9b911c9270b2
+# ╟─1d002879-e74b-4551-9b5c-52b1e8c4f161
+# ╟─2dbdf652-4f2c-4bb6-b55d-d89ef0efb2c4
+# ╠═cb7efa53-b940-4588-ab12-36189081d98d
+# ╟─b6b7dc51-4aac-4419-97d3-f77d45447ebb
+# ╠═c257c7c9-e801-40f4-9318-b6b42f1dd77e
+# ╟─b176e2d7-0f59-4978-91fe-1550f73d437e
+# ╠═d05c838a-eca8-4c20-a7b1-e9b83283a721
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

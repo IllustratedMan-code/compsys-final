@@ -127,7 +127,6 @@ u_end = sol.u[end-1] # this doesn't give hopf points in figure4A for some reason
 u_end = fill(1.0, 9) # have to just set everything to one instead
 
 
-
 function calculate_period(optic, params=params; u=u_end, step_direction=1, return_br=false)
     # define the bifurcation based on our parameter (i.e. k01)
     prob = BK.BifurcationProblem(bifurcation_model, u, params, optic)
